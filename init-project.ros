@@ -1,0 +1,117 @@
+#!/bin/sh
+#|-*- mode:lisp -*-|#
+#|
+exec ros -Q -- $0 "$@"
+|#
+(progn ;;init forms
+  (ros:ensure-asdf)
+  #+quicklisp(ql:quickload '() :silent t)
+  )
+
+(defpackage :ros.script.init-project.3866241094
+  (:use :cl))
+(in-package :ros.script.init-project.3866241094)
+
+(defconstant +version+ "0.1.0")
+
+(defun init-file (path content)
+  (with-open-file (stream path :direction :output
+                               :if-exists :supersede
+                               :if-does-not-exist :create)
+    (write-sequence content stream)))
+
+(defun init-lisp-file (name path)
+  (init-file path (format '()
+"(defpackage ~A
+  (:use :cl))
+(in-package :~A)
+
+;; blah blah blah.
+" name name)))
+(defun init-src-directory (name directory)
+  (ensure-directories-exist directory)
+  (init-lisp-file name (merge-pathnames "main.lisp" directory)))
+
+(defun init-test-file (name path)
+  (init-file path (format '()
+"(defpackage ~A/tests/main
+  (:use :cl
+        :~A
+        :rove))
+(in-package :~A/tests/main)
+
+;; NOTE: To run this test file, execute `(asdf:test-system :~A)' in your Lisp.
+
+(deftest test-~A ()
+  (testing \"1 + 1 = 2\"
+           (ok (= (+ 1 1) 2))))
+" name name name name name)))
+(defun init-test-directory (name directory)
+  (ensure-directories-exist directory)
+  (init-test-file name (merge-pathnames "main.lisp" directory)))
+(defun init-asd-file (name path)
+  (init-file path (format '() 
+"(in-package :asdf)
+
+(defsystem \"~A\"
+  :version \"0.1.0\"
+  :author \"leningkoei\"
+  :license \"\"
+  :depends-on ()
+  :components ((:module \"src\"
+                :components
+                ((:file \"main\"))))
+  :description \"\"
+  :in-order-to ((test-op (test-op \"~A/tests\"))))
+
+(defsystem \"~A/tests\"
+  :author \"leningkoei\"
+  :license \"\"
+  :depends-on (\"~A\"
+               \"rove\")
+  :components ((:module \"tests\"
+                :components
+                ((:file \"main\"))))
+  :description \"Test system for ~A\"
+  :perform (test-op (op c) (symbol-call :rove :run c)))
+" name name name name name)))
+(defun init-readme-file (name path)
+  (init-file path
+             (format '()
+"# ~A
+
+## Usage
+
+## Installation
+" name)))
+(defun init-gitignore-file (path)
+  (init-file path (format '() "*.*~A~%" "~")))
+(defun init-git-directory (name directory)
+  (uiop:chdir directory)
+  (sb-ext:run-program "/usr/bin/git" '("init"))
+  (sb-ext:run-program "/usr/bin/git"
+                      `("remote" "add" "origin"
+                        ,(format '() "git@github.com:Leningkoei/~A.git" name)))
+  (uiop:chdir ".."))
+(defun init-project-directory (name directory)
+  (ensure-directories-exist directory)
+  (init-src-directory name (merge-pathnames "src/" directory))
+  (init-test-directory name (merge-pathnames "tests/" directory))
+  (init-asd-file name
+                 (merge-pathnames (concatenate 'string name ".asd") directory))
+  (init-readme-file name (merge-pathnames "README.markdown" directory))
+  (init-gitignore-file (merge-pathnames ".gitignore" directory))
+  (init-git-directory name directory))
+
+(defun main (&rest argv)
+  (if (string= (car argv) "version")
+      (format 't "~A~%" +version+)
+      (let ((project-name (car argv))
+            (current-working-directory (uiop/os:getcwd)))
+        (let ((project-directory
+                (merge-pathnames (concatenate 'string project-name "/")
+                                 current-working-directory)))
+          (if (probe-file project-directory)
+              (format 't "Error: Project is existed. ~A~%" project-directory)
+              (init-project-directory project-name project-directory))))))
+;;; vim: set ft=lisp lisp:
