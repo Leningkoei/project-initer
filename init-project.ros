@@ -85,7 +85,7 @@ exec ros -Q -- $0 "$@"
 ## Installation
 " name)))
 (defun init-gitignore-file (path)
-  (init-file path (format '() "*.*~A~%" "~")))
+  (init-file path (format '() "*~A~%" "~")))
 (defun init-git-directory (name directory)
   (uiop:chdir directory)
   (sb-ext:run-program "/usr/bin/git" '("init"))
