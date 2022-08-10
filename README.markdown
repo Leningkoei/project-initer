@@ -14,4 +14,4 @@ init a common lisp project
 
 in target directory, git clone this repo
 
-in ~/.bashrc, append 1 line `alien mkpro='target directory/project-initer/init-project.ros'`
+in ~/.bashrc, append 1 line `alias mkpro='$target-directory$/project-initer/init-project.ros'`
