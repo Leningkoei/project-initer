@@ -23,7 +23,7 @@ exec ros -Q -- $0 "$@"
 (defun init-lisp-file (name path)
   (init-file path (format '()
 "(defpackage ~A
-  (:use :cl))
+  (:use :common-lisp))
 (in-package :~A)
 
 ;; blah blah blah.
